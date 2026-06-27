@@ -13,6 +13,7 @@ using Infrastructure.Persistence;
 using WebAPI;
 using WebAPI.Exceptions;
 using WebAPI.Filters;
+using MassTransit; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -135,6 +136,27 @@ builder.Services.AddProblemDetails();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+
+// 10. 注册 MassTransit + RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.SetKebabCaseEndpointNameFormatter();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var host = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        var username = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+        var password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
+        cfg.Host(host, "/", h =>
+        {
+            h.Username(username);
+            h.Password(password);
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 // ============ 中间件管道配置 ============
 
