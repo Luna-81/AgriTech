@@ -58,7 +58,7 @@ jobs:
     
     - name: Generate Coverage Report
       run: |
-        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="[xunit.*]*,[*.Tests]*" --results-directory ./TestResults
+        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude='[xunit.*]*,[*.Tests]*' --results-directory ./TestResults
         reportgenerator -reports:"./TestResults/**/coverage.opencover.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
     
     - name: Upload Coverage Report
@@ -69,7 +69,7 @@ jobs:
     
     - name: Check Coverage Threshold
       run: |
-        COVERAGE=$(dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude="[xunit.*]*,[*.Tests]*" 2>&1 | grep -oP '\d+\.\d+' | head -1)
+        COVERAGE=$(dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude='[xunit.*]*,[*.Tests]*' 2>&1 | grep -oP '\d+\.\d+' | head -1)
         echo "Coverage: $COVERAGE%"
         if (( $(echo "$COVERAGE < 80.0" | bc -l) )); then
           echo "❌ Coverage $COVERAGE% is below 80% threshold!"
