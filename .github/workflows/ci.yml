@@ -58,7 +58,8 @@ jobs:
     
     - name: Generate Coverage Report
       run: |
-        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude='[xunit.*]*,[*.Tests]*' --results-directory ./TestResults
+        EXCLUDE="[xunit.*]*,[*.Tests]*"
+        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="$EXCLUDE" --results-directory ./TestResults
         reportgenerator -reports:"./TestResults/**/coverage.opencover.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
     
     - name: Upload Coverage Report
