@@ -58,10 +58,9 @@ jobs:
     
     - name: Generate Coverage Report
       run: |
-        EXCLUDE="[xunit.*]*,[*.Tests]*"
-        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="$EXCLUDE" --results-directory ./TestResults
-        reportgenerator -reports:"./TestResults/**/coverage.opencover.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
-    
+        dotnet test --configuration Release --filter "Category=Unit" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+        reportgenerator -reports:"./TestResults/**/coverage.cobertura.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
+
     - name: Upload Coverage Report
       uses: actions/upload-artifact@v4
       with:
