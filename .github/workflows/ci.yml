@@ -1,0 +1,81 @@
+# .github/workflows/ci.yml
+name: CI Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+    
+    - name: Run Unit Tests
+      run: |
+        dotnet test --configuration Release --filter "Category=Unit" --results-directory ./TestResults
+    
+    - name: Run Integration Tests
+      run: |
+        dotnet test --configuration Release --filter "Category=Integration" --results-directory ./TestResults
+    
+    - name: Install ReportGenerator
+      run: dotnet tool install --global dotnet-reportgenerator-globaltool
+    
+    - name: Generate Coverage Report
+      run: |
+        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="[xunit.*]*,[*.Tests]*"
+        reportgenerator -reports:"./TestResults/**/coverage.opencover.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
+    
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: ./CoverageReport
+    
+    - name: Check Coverage Threshold
+      run: |
+        COVERAGE=$(dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Exclude="[xunit.*]*,[*.Tests]*" 2>&1 | grep -oP '\d+\.\d+' | head -1)
+        echo "Coverage: $COVERAGE%"
+        if (( $(echo "$COVERAGE < 80.0" | bc -l) )); then
+          echo "❌ Coverage $COVERAGE% is below 80% threshold!"
+          exit 1
+        else
+          echo "✅ Coverage $COVERAGE% meets 80% threshold!"
+        fi
+    
+    - name: Publish Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: ./TestResults
