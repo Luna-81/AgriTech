@@ -2,7 +2,7 @@ using Domain.Farms.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Infrastructure.Data.Configurations;
+namespace Infrastructure.Persistence.Configurations;
 
 public class FarmConfiguration : IEntityTypeConfiguration<Farm>
 {

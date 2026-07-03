@@ -26,6 +26,7 @@ public class AppDbContext : DbContext, IUnitOfWork
 
     public DbSet<Farm> Farms => Set<Farm>();
     public DbSet<Sensor> Sensors => Set<Sensor>();
+    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

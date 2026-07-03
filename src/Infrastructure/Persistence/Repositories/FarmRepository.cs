@@ -58,4 +58,6 @@ public class FarmRepository : EfRepository<Farm>, IFarmRepository
 
         return PagedResult<Farm>.Create(items, totalCount, page, pageSize);
     }
+
+     
 }
