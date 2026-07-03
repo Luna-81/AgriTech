@@ -47,7 +47,9 @@ jobs:
     - name: Run Integration Tests
       run: |
         dotnet test --configuration Release --filter "Category=Integration" --results-directory ./TestResults
-    
+      env:
+        TEST_CONNECTION_STRING: "Host=localhost;Port=5433;Database=agritech_db;Username=agri;Password=agri;"
+
     - name: Install ReportGenerator
       run: dotnet tool install --global dotnet-reportgenerator-globaltool
     
