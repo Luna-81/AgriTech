@@ -1,9 +1,11 @@
 using Application.Features.Sensors.Commands.RegisterSensor;
+using Application.Features.Sensors.Commands.RecordSensorReading;
 using Application.Features.Sensors.Queries.GetSensorHistory;
 using Application.Features.Sensors.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using WebAPI.Models.Requests;
 
 namespace WebAPI.Controllers.v1;
 
@@ -77,6 +79,37 @@ public class SensorsController : ControllerBase
         
         return result.IsSuccess 
             ? Ok(result.Value) 
+            : BadRequest(result.Errors);
+    }
+
+    /// <summary>
+    /// 记录传感器读数
+    /// </summary>
+    /// <param name="id">传感器 ID（从路由获取）</param>
+    /// <param name="request">读数请求</param>
+    /// <returns>操作结果</returns>
+    /// <response code="200">记录成功</response>
+    /// <response code="404">传感器不存在</response>
+    /// <response code="400">请求参数无效</response>
+    [HttpPost("{id}/readings")]
+    [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(List<string>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RecordReading(
+        [FromRoute] Guid id,  // ✅ 添加 [FromRoute]
+        [FromBody] RecordReadingRequest request)
+    {
+        var command = new RecordSensorReadingCommand
+        {
+            SensorId = id,
+            Temperature = request.Temperature,
+            Humidity = request.Humidity,
+            Timestamp = DateTime.UtcNow
+        };
+        var result = await _sender.Send(command);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
             : BadRequest(result.Errors);
     }
 }

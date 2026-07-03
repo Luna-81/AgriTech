@@ -47,15 +47,15 @@ public static class SeedData
         sensor2.Activate();
 
         // ============ 添加历史数据 ============
-        // 使用 AddReading 方法添加历史数据
-        sensor1.AddReading(33.5, 68.2, DateTime.UtcNow.AddHours(-2));
-        sensor1.AddReading(34.2, 65.5, DateTime.UtcNow.AddHours(-1));
-        sensor1.AddReading(36.8, 62.3, DateTime.UtcNow.AddMinutes(-30));
-        sensor1.AddReading(35.1, 64.7, DateTime.UtcNow.AddMinutes(-15));
+        // 使用 SensorReading 方法添加历史数据
+        sensor1.SensorReading(33.5, 68.2, DateTime.UtcNow.AddHours(-2));
+        sensor1.SensorReading(34.2, 65.5, DateTime.UtcNow.AddHours(-1));
+        sensor1.SensorReading(36.8, 62.3, DateTime.UtcNow.AddMinutes(-30));
+        sensor1.SensorReading(35.1, 64.7, DateTime.UtcNow.AddMinutes(-15));
         
-        sensor2.AddReading(24.5, 80.1, DateTime.UtcNow.AddHours(-3));
-        sensor2.AddReading(25.1, 78.9, DateTime.UtcNow.AddMinutes(-45));
-        sensor2.AddReading(24.8, 79.5, DateTime.UtcNow.AddMinutes(-20));
+        sensor2.SensorReading(24.5, 80.1, DateTime.UtcNow.AddHours(-3));
+        sensor2.SensorReading(25.1, 78.9, DateTime.UtcNow.AddMinutes(-45));
+        sensor2.SensorReading(24.8, 79.5, DateTime.UtcNow.AddMinutes(-20));
 
         // ============ 保存到数据库 ============
         await context.Farms.AddAsync(farm);

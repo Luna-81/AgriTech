@@ -3,8 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
-//using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks; 
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.OpenApi.Models;
 using Application;
@@ -13,7 +12,8 @@ using Infrastructure.Persistence;
 using WebAPI;
 using WebAPI.Exceptions;
 using WebAPI.Filters;
-using MassTransit; 
+using MassTransit;
+using Domain.Common.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +21,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
+
+// ============ 从环境变量构建连接字符串 ============
+var postgresHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") 
+    ?? throw new InvalidOperationException("POSTGRES_HOST environment variable is not set");
+var postgresPort = Environment.GetEnvironmentVariable("POSTGRES_PORT") 
+    ?? throw new InvalidOperationException("POSTGRES_PORT environment variable is not set");
+var postgresDb = Environment.GetEnvironmentVariable("POSTGRES_DB") 
+    ?? throw new InvalidOperationException("POSTGRES_DB environment variable is not set");
+var postgresUser = Environment.GetEnvironmentVariable("POSTGRES_USER") 
+    ?? throw new InvalidOperationException("POSTGRES_USER environment variable is not set");
+var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") 
+    ?? throw new InvalidOperationException("POSTGRES_PASSWORD environment variable is not set");
+
+var connectionString = $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword};Pooling=true;Maximum Pool Size=100;";
+
+Console.WriteLine($"✅ PostgreSQL: Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password=****");
+
+// 覆盖配置
+builder.Configuration["ConnectionStrings:DefaultConnection"] = connectionString;
 
 // ============ 注册服务 ============
 
@@ -105,7 +124,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// 6. 注册健康检查 ✅
+// 6. 注册健康检查
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<AppDbContext>(
         name: "database",
@@ -135,18 +154,19 @@ builder.Services.AddProblemDetails();
 // 9. 添加内存缓存
 builder.Services.AddMemoryCache();
 
-var app = builder.Build();
-
-// 10. 注册 MassTransit + RabbitMQ
+// ============ 10. 注册 MassTransit + RabbitMQ ============
 builder.Services.AddMassTransit(x =>
 {
-    x.SetKebabCaseEndpointNameFormatter();
-
     x.UsingRabbitMq((context, cfg) =>
     {
-        var host = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
-        var username = builder.Configuration["RabbitMQ:Username"] ?? "guest";
-        var password = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+        var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST") 
+            ?? throw new InvalidOperationException("RABBITMQ_HOST environment variable is not set");
+        var username = Environment.GetEnvironmentVariable("RABBITMQ_USER") 
+            ?? throw new InvalidOperationException("RABBITMQ_USER environment variable is not set");
+        var password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
+            ?? throw new InvalidOperationException("RABBITMQ_PASSWORD environment variable is not set");
+
+        Console.WriteLine($"✅ RabbitMQ: Host={host};Username={username};Password=****");
 
         cfg.Host(host, "/", h =>
         {
@@ -154,24 +174,30 @@ builder.Services.AddMassTransit(x =>
             h.Password(password);
         });
 
+        cfg.ReceiveEndpoint("sensor-registered-queue", e =>
+        {
+            // 不配置消费者，只创建队列
+        });
+
         cfg.ConfigureEndpoints(context);
     });
 });
 
+var app = builder.Build();
+
 // ============ 中间件管道配置 ============
 
-if (app.Environment.IsDevelopment())
+// ✅ 强制开启 Swagger
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "AgriTech API v1");
-        options.RoutePrefix = "swagger";
-        options.DisplayRequestDuration();
-        options.EnableTryItOutByDefault();
-    });
-}
-else
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "AgriTech API v1");
+    options.RoutePrefix = "swagger";
+    options.DisplayRequestDuration();
+    options.EnableTryItOutByDefault();
+});
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
@@ -184,13 +210,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// ============ 健康检查端点 ✅ ============
+// ============ 健康检查端点 ============
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
     {
         context.Response.ContentType = "application/json";
-        
+
         var response = new
         {
             Status = report.Status.ToString(),
@@ -205,7 +231,7 @@ app.MapHealthChecks("/health", new HealthCheckOptions
             }),
             Timestamp = DateTime.UtcNow
         };
-        
+
         await context.Response.WriteAsJsonAsync(response);
     }
 });
@@ -216,13 +242,9 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        // if (app.Environment.IsDevelopment())
-        // {
-        //     await dbContext.Database.EnsureDeletedAsync();
-        // }
         await dbContext.Database.EnsureCreatedAsync();
         await SeedData.InitializeAsync(dbContext);
-        
+
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Database initialized and seeded successfully.");
     }
