@@ -482,3 +482,78 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+.gitignore
+src/WebAPI/requests.http
+src/WebAPI/WebAPI.http
+src/WebAPI/appsettings.Development.json
+src/WebAPI/Properties/launchSettings.json
+CoverageReport/*
+
+# ==========================================
+# 项目特定
+# ==========================================
+# 测试报告和覆盖率
+coveragereport/
+CoverageReport/
+TestResults/
+*.coverage
+*.coveragexml
+
+# Docker 相关
+docker-compose.override.yml
+docker-compose.*.yml
+!.dockerignore
+
+# 本地配置（含密码）
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+logs/
+**/logs/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.orig
+*.old
+
+# HTTP 测试文件（本地用）
+*.http
+requests.http
+*.rest
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+bin/
+obj/
+publish/
+*.user
+*.suo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+*.tmp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker
+*.pid
