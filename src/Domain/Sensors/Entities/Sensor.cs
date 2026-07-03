@@ -3,6 +3,7 @@ using Domain.Common.Exceptions;
 using Domain.Sensors.Enums;
 using Domain.Common.Interfaces;
 using Domain.Shared.ValueObjects;
+using Domain.Events;
 
 namespace Domain.Sensors.Entities;
 
@@ -43,16 +44,16 @@ public class Sensor : IAggregateRoot, IAuditableEntity
         return new Sensor(Guid.NewGuid(), name.Trim(), threshold,location);
     }
 
-    // public void AddReading(double temp, double humidity)
-    // {
-    //     if (Status != SensorStatus.Active)
-    //         throw new DomainException("Only Active sensors can receive readings.");
+    public void SensorReading(double temp, double humidity)
+    {
+        if (Status != SensorStatus.Active)
+            throw new DomainException("Only Active sensors can receive readings.");
 
-    //     var reading = new Reading(DateTime.UtcNow, temp, humidity);
-    //     _readings.Add(reading);
-    // }
+        var reading = new Reading(DateTime.UtcNow, temp, humidity);
+        _readings.Add(reading);
+    }
 
-    public void AddReading(double temp, double humidity, DateTime timestamp)
+    public void SensorReading(double temp, double humidity, DateTime timestamp)
     {
         if (Status != SensorStatus.Active)
             throw new DomainException("Only Active sensors can receive readings.");
@@ -71,6 +72,7 @@ public class Sensor : IAggregateRoot, IAuditableEntity
             throw new DomainException("Senseor status at Maintenance");
 
         Status = SensorStatus.Active;
+        _domainEvents.Add(new SensorActivatedDomainEvent(Id, DateTime.UtcNow));
     }
 
     public void Deactivate()
