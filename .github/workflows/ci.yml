@@ -47,9 +47,9 @@ jobs:
     - name: Run Integration Tests
       run: |
         dotnet test --configuration Release \
-        --filter "Category=Integration" \
-        --no-build \
-        --results-directory ./TestResults
+          --filter "Category=Integration" \
+          --no-build \
+          --results-directory ./TestResults
       env:
         TEST_CONNECTION_STRING: "Host=localhost;Port=5432;Database=testdb;Username=postgres;Password=postgres;"
 
@@ -58,7 +58,7 @@ jobs:
     
     - name: Generate Coverage Report
       run: |
-        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="[xunit.*]*,[*.Tests]*"
+        dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Exclude="[xunit.*]*,[*.Tests]*" --results-directory ./TestResults
         reportgenerator -reports:"./TestResults/**/coverage.opencover.xml" -targetdir:"./CoverageReport" -reporttypes:"HtmlInline_AzurePipelines"
     
     - name: Upload Coverage Report
