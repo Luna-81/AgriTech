@@ -29,4 +29,5 @@ ENV DOTNET_RUNNING_IN_CONTAINER=true
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${WEBAPI_INTERNAL_PORT:-80}/health || exit 1
 
+    
 ENTRYPOINT ["dotnet", "WebAPI.dll"]
