@@ -217,4 +217,5 @@ AgriTech/
 ├── AgriTech.sln                   # Solution file
 └── README.md                      # This file
 ```
-
+[![CI Build & Test](https://github.com/Luna-81/AgriTech/actions/workflows/ci.yml/badge.svg)](https://github.com/Luna-81/AgriTech/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/Luna-81/AgriTech/actions)
