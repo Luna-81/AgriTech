@@ -9,8 +9,8 @@
 [![Azure](https://img.shields.io/badge/Azure-0078D4?logo=microsoftazure)](https://azure.microsoft.com/)
 
 <!-- ========== 状态徽章 ========== -->
-[![CI Build & Test](https://github.com/yourusername/AgriTech/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/AgriTech/actions/workflows/ci.yml)
-[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/yourusername/AgriTech/actions)
+[![CI Build & Test](https://github.com/Luna-81/AgriTech/actions/workflows/ci.yml/badge.svg)](https://github.com/Luna-81/AgriTech/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)](https://github.com/Luna-81/AgriTech/actions)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](.github/pull_request_template.md)
 
