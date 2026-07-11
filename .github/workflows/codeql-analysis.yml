@@ -11,7 +11,7 @@ on:
 
 jobs:
   analyze:
-    name: Analyze (csharp) (pull_request)
+    name: Analyze (csharp)
     runs-on: ubuntu-latest
     permissions:
       actions: read
