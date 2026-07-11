@@ -9,6 +9,7 @@ on:
 
 jobs:
   build-and-test:
+    name: CI Build & Test (ci.yml) / build-and-test (pull_request)
     runs-on: ubuntu-latest
     
     services:
