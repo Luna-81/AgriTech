@@ -1,5 +1,5 @@
 # .github/workflows/ci.yml
-name: CI Build & Test
+name: CI Build & Test (ci.yml)
 
 on:
   push:
