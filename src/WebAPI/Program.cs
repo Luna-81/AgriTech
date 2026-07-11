@@ -16,6 +16,7 @@ using MassTransit;
 using Domain.Common.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://*:80");
 
 // ============ 配置日志 ============
 builder.Logging.ClearProviders();
@@ -34,7 +35,7 @@ var postgresUser = Environment.GetEnvironmentVariable("POSTGRES_USER")
 var postgresPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") 
     ?? throw new InvalidOperationException("POSTGRES_PASSWORD environment variable is not set");
 
-var connectionString = $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword};Pooling=true;Maximum Pool Size=100;";
+var connectionString = $"Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password={postgresPassword};Pooling=true;Maximum Pool Size=100;Timeout=60;";
 
 Console.WriteLine($"✅ PostgreSQL: Host={postgresHost};Port={postgresPort};Database={postgresDb};Username={postgresUser};Password=****");
 
@@ -154,33 +155,57 @@ builder.Services.AddProblemDetails();
 // 9. 添加内存缓存
 builder.Services.AddMemoryCache();
 
-// ============ 10. 注册 MassTransit + RabbitMQ ============
+// ============ 10. 注册 MassTransit（支持动态切换） ============
 builder.Services.AddMassTransit(x =>
 {
-    x.UsingRabbitMq((context, cfg) =>
+    // ✅ 通过环境变量决定使用哪个消息队列
+    var useServiceBus = Environment.GetEnvironmentVariable("USE_SERVICEBUS")?.ToLower() == "true";
+
+    if (useServiceBus)
     {
-        var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST") 
-            ?? throw new InvalidOperationException("RABBITMQ_HOST environment variable is not set");
-        var username = Environment.GetEnvironmentVariable("RABBITMQ_USER") 
-            ?? throw new InvalidOperationException("RABBITMQ_USER environment variable is not set");
-        var password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") 
-            ?? throw new InvalidOperationException("RABBITMQ_PASSWORD environment variable is not set");
-
-        Console.WriteLine($"✅ RabbitMQ: Host={host};Username={username};Password=****");
-
-        cfg.Host(host, "/", h =>
+        Console.WriteLine("✅ WebAPI 使用 Azure Service Bus（云端模式）");
+        
+        x.UsingAzureServiceBus((context, cfg) =>
         {
-            h.Username(username);
-            h.Password(password);
-        });
+            var connectionString = Environment.GetEnvironmentVariable("SERVICEBUS_CONNECTION_STRING") 
+                ?? throw new InvalidOperationException("SERVICEBUS_CONNECTION_STRING environment variable is not set");
 
-        cfg.ReceiveEndpoint("sensor-registered-queue", e =>
+            cfg.Host(connectionString);
+
+            cfg.ReceiveEndpoint("sensor-registered", e =>
+            {
+                // 不配置消费者，只创建队列
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
+    }
+    else
+    {
+        Console.WriteLine("✅ WebAPI 使用 RabbitMQ（本地开发模式）");
+        
+        x.UsingRabbitMq((context, cfg) =>
         {
-            // 不配置消费者，只创建队列
-        });
+            var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST") ?? "localhost";
+            var username = Environment.GetEnvironmentVariable("RABBITMQ_USER") ?? "guest";
+            var password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD") ?? "guest";
 
-        cfg.ConfigureEndpoints(context);
-    });
+            Console.WriteLine($"✅ RabbitMQ: Host={host};Username={username};Password=****");
+
+            cfg.Host(host, "/", h =>
+            {
+                h.Username(username);
+                h.Password(password);
+            });
+
+            cfg.ReceiveEndpoint("sensor-registered-queue", e =>
+            {
+                // 不配置消费者，只创建队列
+            });
+
+            cfg.ConfigureEndpoints(context);
+        });
+    }
 });
 
 var app = builder.Build();

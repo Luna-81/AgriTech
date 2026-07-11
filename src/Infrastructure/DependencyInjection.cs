@@ -54,7 +54,7 @@ public static class InfrastructureServiceRegistration
             {
                 npgsqlOptions.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                 npgsqlOptions.EnableRetryOnFailure(3);
-                npgsqlOptions.UseNetTopologySuite(); 
+                //npgsqlOptions.UseNetTopologySuite(); 
             });
 
             // 开发环境日志配置
