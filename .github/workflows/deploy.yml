@@ -1,5 +1,5 @@
 # .github/workflows/deploy.yml
-name: 🚀 Deploy to Azure
+name: Deploy to Azure
 
 on:
   push:
@@ -8,76 +8,56 @@ on:
 
 env:
   RESOURCE_GROUP: agritech-rg
-  ACR_NAME: agritechacr2026
-  ACR_LOGIN_SERVER: agritechacr2026.azurecr.io
   WEBAPI_APP: agritech-webapi
   WORKER_APP: agritech-worker
 
 jobs:
   deploy-webapi:
-    name: 🚀 Deploy WebAPI
+    name: Deploy WebAPI
     runs-on: ubuntu-latest
     
     steps:
-    - name: 📥 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
     
-    - name: 🔑 Login to Azure
-      uses: azure/login@v1
+    - name: Login to ACR
+      uses: docker/login-action@v3
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
     
-    - name: 🐳 Login to ACR
-      run: az acr login --name ${{ env.ACR_NAME }}
-    
-    - name: 🐳 Build and push WebAPI
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: src/WebAPI/Dockerfile
-        push: true
-        tags: ${{ env.ACR_LOGIN_SERVER }}/webapi:${{ github.sha }}
-    
-    - name: 🚀 Update WebAPI
+    - name: Deploy WebAPI
       run: |
         az containerapp update \
           --name ${{ env.WEBAPI_APP }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --image ${{ env.ACR_LOGIN_SERVER }}/webapi:${{ github.sha }}
+          --image ${{ secrets.AZURE_CONTAINER_REGISTRY }}/webapi:latest
     
-    - name: ✅ Verify WebAPI
+    - name: Verify WebAPI
       run: |
         sleep 30
         curl -f https://${{ env.WEBAPI_APP }}.orangemeadow-327c87e1.eastasia.azurecontainerapps.io/health
 
   deploy-worker:
-    name: 🚀 Deploy Worker
+    name: Deploy Worker
     runs-on: ubuntu-latest
     needs: deploy-webapi
     
     steps:
-    - name: 📥 Checkout
+    - name: Checkout
       uses: actions/checkout@v4
     
-    - name: 🔑 Login to Azure
-      uses: azure/login@v1
+    - name: Login to ACR
+      uses: docker/login-action@v3
       with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
     
-    - name: 🐳 Login to ACR
-      run: az acr login --name ${{ env.ACR_NAME }}
-    
-    - name: 🐳 Build and push Worker
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: src/AgriTech.Worker/Dockerfile
-        push: true
-        tags: ${{ env.ACR_LOGIN_SERVER }}/worker:${{ github.sha }}
-    
-    - name: 🚀 Update Worker
+    - name: Deploy Worker
       run: |
         az containerapp update \
           --name ${{ env.WORKER_APP }} \
           --resource-group ${{ env.RESOURCE_GROUP }} \
-          --image ${{ env.ACR_LOGIN_SERVER }}/worker:${{ github.sha }}
+          --image ${{ secrets.AZURE_CONTAINER_REGISTRY }}/worker:latest
