@@ -11,7 +11,7 @@ on:
 
 jobs:
   analyze:
-    name: Analyze (csharp)
+    name: codeql-analysis
     runs-on: ubuntu-latest
     permissions:
       actions: read
