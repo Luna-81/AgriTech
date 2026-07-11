@@ -19,9 +19,10 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=build /app/publish .
 
-RUN adduser -D -u 1000 appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+# ❌ 注释掉这两行，让应用以 root 运行
+# RUN adduser -D -u 1000 appuser && \
+#     chown -R appuser:appuser /app
+# USER appuser
 
 EXPOSE ${WEBAPI_INTERNAL_PORT:-80}
 
@@ -30,5 +31,4 @@ ENV DOTNET_RUNNING_IN_CONTAINER=true
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${WEBAPI_INTERNAL_PORT:-80}/health || exit 1
 
-    
 ENTRYPOINT ["dotnet", "WebAPI.dll"]
