@@ -1,0 +1,63 @@
+# .github/workflows/deploy.yml
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: agritech-rg
+  WEBAPI_APP: agritech-webapi
+  WORKER_APP: agritech-worker
+
+jobs:
+  deploy-webapi:
+    name: Deploy WebAPI
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Login to ACR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+    
+    - name: Deploy WebAPI
+      run: |
+        az containerapp update \
+          --name ${{ env.WEBAPI_APP }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ secrets.AZURE_CONTAINER_REGISTRY }}/webapi:latest
+    
+    - name: Verify WebAPI
+      run: |
+        sleep 30
+        curl -f https://${{ env.WEBAPI_APP }}.orangemeadow-327c87e1.eastasia.azurecontainerapps.io/health
+
+  deploy-worker:
+    name: Deploy Worker
+    runs-on: ubuntu-latest
+    needs: deploy-webapi
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Login to ACR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+    
+    - name: Deploy Worker
+      run: |
+        az containerapp update \
+          --name ${{ env.WORKER_APP }} \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --image ${{ secrets.AZURE_CONTAINER_REGISTRY }}/worker:latest

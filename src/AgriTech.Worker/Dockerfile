@@ -19,8 +19,9 @@ WORKDIR /app
 RUN apk add --no-cache curl
 COPY --from=build /app/publish .
 
-RUN adduser -D -u 1000 appuser
-USER appuser
+#RUN adduser -D -u 1000 appuser && \
+#    chown -R appuser:appuser /app
+#USER appuser
 
 EXPOSE 80
 
