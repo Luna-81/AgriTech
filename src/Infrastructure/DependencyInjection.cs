@@ -10,6 +10,8 @@ using Domain.Common.Interfaces;
 using Domain.Farms.RepositoryInterfaces;   
 using Domain.Sensors.RepositoryInterfaces;
 using Npgsql;
+using Application.Common.Interfaces;
+using Infrastructure.Messaging;
 
 namespace Infrastructure;
 
@@ -85,6 +87,7 @@ public static class InfrastructureServiceRegistration
                 failureStatus: HealthStatus.Degraded, 
                 tags: new[] { "database" });
 
+        services.AddScoped<IEventPublisher, MassTransitEventPublisher>();
         return services;
     }
 

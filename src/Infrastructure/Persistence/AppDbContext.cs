@@ -1,26 +1,26 @@
 using Domain.Common.Interfaces;
 using Domain.Farms.Entities;
 using Domain.Sensors.Entities;
-using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
+using Application.Common.Interfaces;  
 using Domain.Common;
 
 namespace Infrastructure.Persistence;
 
 public class AppDbContext : DbContext, IUnitOfWork
 {
-    private readonly IMediator _mediator;
+    private readonly IDomainEventDispatcher _domainEventDispatcher;
     private readonly ILogger<AppDbContext> _logger;
     private IDbContextTransaction? _currentTransaction;
 
     public AppDbContext(
-        DbContextOptions<AppDbContext> options, 
-        IMediator mediator, 
-        ILogger<AppDbContext> logger) : base(options)
+    DbContextOptions<AppDbContext> options, 
+    IDomainEventDispatcher domainEventDispatcher, 
+    ILogger<AppDbContext> logger) : base(options)
     {
-        _mediator = mediator;
+        _domainEventDispatcher = domainEventDispatcher;
         _logger = logger;
     }
 
@@ -69,7 +69,7 @@ public class AppDbContext : DbContext, IUnitOfWork
 
         foreach (var domainEvent in events)
         {
-            await _mediator.Publish(domainEvent);
+            await _domainEventDispatcher.DispatchAsync(domainEvent);
         }
     }
 
