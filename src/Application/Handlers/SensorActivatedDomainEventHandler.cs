@@ -1,41 +1,40 @@
-// src/Application/Handlers/SensorActivatedDomainEventHandler.cs
+// src/Application/Handlers/SensorActivatedNotificationHandler.cs
 using MediatR;
-using MassTransit;
+using Application.Common.Interfaces;
 using Application.Events;
-using Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Handlers;
 
 /// <summary>
-/// 传感器激活领域事件处理器
-/// 将领域事件转换为集成事件发送到 RabbitMQ
+/// notification handler for SensorActivatedNotification.
+/// handles the SensorActivatedNotification and publishes the corresponding integration event to the event bus.
 /// </summary>
-public class SensorActivatedDomainEventHandler : INotificationHandler<SensorActivatedDomainEvent>
+public class SensorActivatedNotificationHandler : INotificationHandler<SensorActivatedNotification>
 {
-    private readonly IBus _bus;
-    private readonly ILogger<SensorActivatedDomainEventHandler> _logger;
+    private readonly IEventPublisher _publisher;
+    private readonly ILogger<SensorActivatedNotificationHandler> _logger;
 
-    public SensorActivatedDomainEventHandler(
-        IBus bus,
-        ILogger<SensorActivatedDomainEventHandler> logger)
+    public SensorActivatedNotificationHandler(
+        IEventPublisher publisher,
+        ILogger<SensorActivatedNotificationHandler> logger)
     {
-        _bus = bus;
+        _publisher = publisher;
         _logger = logger;
     }
 
-    public async Task Handle(SensorActivatedDomainEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(SensorActivatedNotification notification, CancellationToken cancellationToken)
     {
-        // 将领域事件转换为集成事件（Integration Event）发送到 RabbitMQ
+        // 将通知转换为集成事件（Integration Event）发送到消息队列
         var integrationEvent = new SensorActivatedIntegrationEvent
         {
             SensorId = notification.SensorId,
             ActivatedAt = notification.ActivatedAt
         };
 
-        await _bus.Publish(integrationEvent, cancellationToken);
-        
-        _logger.LogInformation("SensorActivatedIntegrationEvent published. SensorId: {SensorId}", 
+        await _publisher.PublishAsync(integrationEvent, cancellationToken);
+
+        _logger.LogInformation("SensorActivatedIntegrationEvent published. SensorId: {SensorId}",
             notification.SensorId);
     }
 }

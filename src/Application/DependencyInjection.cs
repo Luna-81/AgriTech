@@ -1,8 +1,11 @@
 using Application.Behaviors;
+using Application.Common.Dispatchers;
+using Application.Common.Interfaces;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+
 
 namespace Application;
 
@@ -12,21 +15,19 @@ public static class DependencyInjection
     {
         var assembly = Assembly.GetExecutingAssembly();
 
-        // 1 Register MediatR
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
-
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-            //cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
         });
 
-        // 2. Register FluentValidation
         services.AddValidatorsFromAssembly(assembly);
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+        // register the domain event dispatcher
+        services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
 
         return services;
     }
-
-
 }

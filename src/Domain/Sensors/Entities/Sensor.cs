@@ -108,7 +108,7 @@ public class Sensor : IAggregateRoot, IAuditableEntity
         set => IsDeleted = value; 
     }
 
-    private readonly List<object> _domainEvents = new();
-    public IReadOnlyCollection<object>? DomainEvents => _domainEvents.AsReadOnly();
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent>? DomainEvents => _domainEvents.AsReadOnly();
     public void ClearDomainEvents() => _domainEvents.Clear();
 }
