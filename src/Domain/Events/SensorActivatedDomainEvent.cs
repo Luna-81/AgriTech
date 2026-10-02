@@ -1,15 +1,16 @@
-using MediatR;
+using Domain.Common.Interfaces;
 
 namespace Domain.Events;
 
 /// <summary>
-/// 传感器激活领域事件
-/// 当传感器被激活时触发
+/// sensor activated domain event that occurs when a sensor is activated.
+/// When a sensor is activated, this event is triggered.
 /// </summary>
-public class SensorActivatedDomainEvent : INotification
+public class SensorActivatedDomainEvent : IDomainEvent
 {
     public Guid SensorId { get; }
     public DateTime ActivatedAt { get; }
+    public DateTime OccurredAt => ActivatedAt;
 
     public SensorActivatedDomainEvent(Guid sensorId, DateTime activatedAt)
     {
