@@ -2,6 +2,6 @@ namespace Domain.Common.Interfaces;
 
 public interface IAggregateRoot
 {
-    IReadOnlyCollection<object>? DomainEvents { get; }
+    IReadOnlyCollection<IDomainEvent>? DomainEvents { get; }
     void ClearDomainEvents();
 }

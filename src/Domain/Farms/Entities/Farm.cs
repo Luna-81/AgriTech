@@ -27,8 +27,8 @@ public class Farm : IAggregateRoot, IAuditableEntity
     private readonly List<Sensor> _sensors = new();
     public IReadOnlyList<Sensor> Sensors => _sensors.AsReadOnly();
 
-    private readonly List<object> _domainEvents = new();
-    public IReadOnlyCollection<object>? DomainEvents => _domainEvents.AsReadOnly();
+    private readonly List<IDomainEvent> _domainEvents = new();
+    public IReadOnlyCollection<IDomainEvent>? DomainEvents => _domainEvents.AsReadOnly();
 
     // EF Core 所需的构造函数
     private Farm() { }
