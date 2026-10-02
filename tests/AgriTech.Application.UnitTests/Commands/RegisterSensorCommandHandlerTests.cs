@@ -1,27 +1,24 @@
 // tests/AgriTech.Application.UnitTests/Commands/RegisterSensorCommandHandlerTests.cs
-using Application.Common.Models;
+using Application.Common.Interfaces;
 using Application.Features.Sensors.Commands.RegisterSensor;
 using Application.Events;
-using Domain.Common.Interfaces;
 using Domain.Farms.Entities;
-using Domain.Sensors.Entities;
-using Domain.Sensors.ValueObjects;
-using Domain.Farms.RepositoryInterfaces; 
+using Domain.Farms.RepositoryInterfaces;
 using Domain.Shared.ValueObjects;
 using FluentAssertions;
-using MassTransit;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using AutoFixture;
 
 namespace AgriTech.Application.UnitTests.Commands;
+
 [Trait("Category", "Unit")]
 public class RegisterSensorCommandHandlerTests
 {
     private readonly Fixture _fixture;
     private readonly Mock<IFarmRepository> _farmRepositoryMock;
-    private readonly Mock<IBus> _busMock;
+    private readonly Mock<IEventPublisher> _publisherMock;      
     private readonly Mock<ILogger<RegisterSensorCommandHandler>> _loggerMock;
     private readonly RegisterSensorCommandHandler _handler;
 
@@ -29,12 +26,12 @@ public class RegisterSensorCommandHandlerTests
     {
         _fixture = new Fixture();
         _farmRepositoryMock = new Mock<IFarmRepository>();
-        _busMock = new Mock<IBus>();
+        _publisherMock = new Mock<IEventPublisher>();            
         _loggerMock = new Mock<ILogger<RegisterSensorCommandHandler>>();
 
         _handler = new RegisterSensorCommandHandler(
             _farmRepositoryMock.Object,
-            _busMock.Object,
+            _publisherMock.Object,                              
             _loggerMock.Object
         );
     }
@@ -44,10 +41,10 @@ public class RegisterSensorCommandHandlerTests
     {
         // Arrange
         var farmId = Guid.NewGuid();
-        var farm = Farm.Create("测试农场", Location.FromCoordinates(31.23, 121.47), 10);
+        var farm = Farm.Create("Test Farm", Location.FromCoordinates(31.23, 121.47), 10);
         var command = new RegisterSensorCommand
         {
-            Name = "测试传感器",
+            Name = "Test Sensor",
             TemperatureThreshold = 35.0,
             Latitude = 31.23,
             Longitude = 121.47,
@@ -58,8 +55,10 @@ public class RegisterSensorCommandHandlerTests
             .Setup(x => x.GetByIdAsync(farmId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(farm);
 
-        _busMock
-            .Setup(x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()))
+        _publisherMock
+            .Setup(x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         // Act
@@ -69,8 +68,10 @@ public class RegisterSensorCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeEmpty();
 
-        _busMock.Verify(
-            x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()),
+        _publisherMock.Verify(
+            x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -80,7 +81,7 @@ public class RegisterSensorCommandHandlerTests
         // Arrange
         var command = new RegisterSensorCommand
         {
-            Name = "测试传感器",
+            Name = "Test Sensor",
             TemperatureThreshold = 35.0,
             Latitude = 31.23,
             Longitude = 121.47,
@@ -98,8 +99,10 @@ public class RegisterSensorCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().ContainMatch("*不存在*");
 
-        _busMock.Verify(
-            x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()),
+        _publisherMock.Verify(
+            x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -109,14 +112,14 @@ public class RegisterSensorCommandHandlerTests
         // Arrange
         var command = new RegisterSensorCommand
         {
-            Name = "", // 无效名称
+            Name = "", // unvalid name to trigger domain exception
             TemperatureThreshold = 35.0,
             Latitude = 31.23,
             Longitude = 121.47,
             FarmId = Guid.NewGuid()
         };
 
-        var farm = Farm.Create("测试农场", Location.FromCoordinates(31.23, 121.47), 10);
+        var farm = Farm.Create("Test Farm", Location.FromCoordinates(31.23, 121.47), 10);
         _farmRepositoryMock
             .Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(farm);
@@ -128,20 +131,22 @@ public class RegisterSensorCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().NotBeEmpty();
 
-        _busMock.Verify(
-            x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()),
+        _publisherMock.Verify(
+            x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task Handle_WhenBusPublishFails_ReturnsFailure()
+    public async Task Handle_WhenPublishFails_ReturnsFailure()
     {
         // Arrange
         var farmId = Guid.NewGuid();
-        var farm = Farm.Create("测试农场", Location.FromCoordinates(31.23, 121.47), 10);
+        var farm = Farm.Create("Test Farm", Location.FromCoordinates(31.23, 121.47), 10);
         var command = new RegisterSensorCommand
         {
-            Name = "测试传感器",
+            Name = "Test Sensor",
             TemperatureThreshold = 35.0,
             Latitude = 31.23,
             Longitude = 121.47,
@@ -152,9 +157,11 @@ public class RegisterSensorCommandHandlerTests
             .Setup(x => x.GetByIdAsync(farmId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(farm);
 
-        _busMock
-            .Setup(x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("RabbitMQ connection failed"));
+        _publisherMock
+            .Setup(x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Message broker connection failed"));
 
         // Act
         var result = await _handler.Handle(command, CancellationToken.None);
@@ -163,8 +170,10 @@ public class RegisterSensorCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Errors.Should().NotBeEmpty();
 
-        _busMock.Verify(
-            x => x.Publish(It.IsAny<SensorRegisteredEvent>(), It.IsAny<CancellationToken>()),
+        _publisherMock.Verify(
+            x => x.PublishAsync(
+                It.IsAny<SensorRegisteredEvent>(),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }
