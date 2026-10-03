@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Application.Common.Models;
+using Asp.Versioning;
 
 namespace WebAPI.Common;
 

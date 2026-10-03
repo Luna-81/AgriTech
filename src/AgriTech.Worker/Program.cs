@@ -68,18 +68,21 @@ builder.Services.AddMassTransit(x =>
             {
                 e.ConfigureConsumer<SensorRegisteredConsumer>(context);
                 e.PrefetchCount = 5;
+                e.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(2)));
             });
 
             cfg.SubscriptionEndpoint<SensorReadingRecordedEvent>("sensor-reading-batch-subscription", e =>
             {
                 e.ConfigureConsumer<SensorReadingBatchConsumer>(context);
                 e.PrefetchCount = 50;
+                e.UseMessageRetry(r => r.Interval(2, TimeSpan.FromSeconds(3)));
             });
 
             cfg.SubscriptionEndpoint<AlertTriggeredEvent>("alert-notification-subscription", e =>
             {
                 e.ConfigureConsumer<AlertNotificationConsumer>(context);
                 e.PrefetchCount = 10;
+                e.UseMessageRetry(r => r.Interval(5, TimeSpan.FromSeconds(1)));
             });
 
             cfg.SubscriptionEndpoint<DeadLetterMessage>("dead-letter-subscription", e =>
