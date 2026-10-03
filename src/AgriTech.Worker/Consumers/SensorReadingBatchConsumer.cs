@@ -15,14 +15,13 @@ public class SensorReadingBatchConsumer : IConsumer<SensorReadingRecordedEvent>
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SensorReadingBatchConsumer> _logger;
-    
-    // ✅ 使用 ConcurrentBag 存储消息
+
     private static readonly ConcurrentBag<SensorReadingRecordedEvent> _buffer = new();
     private static int _messageCount = 0;
     private static readonly object _lock = new();
     private static Timer? _timer;
     private static bool _isProcessing = false;
-    
+
     private const int BatchSize = 100;
     private const int FlushIntervalSeconds = 5;
 
@@ -32,50 +31,45 @@ public class SensorReadingBatchConsumer : IConsumer<SensorReadingRecordedEvent>
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
-        
-        // ✅ 启动定时器
+
         if (_timer == null)
         {
-            _timer = new Timer(FlushTimer, null, 
-                TimeSpan.FromSeconds(FlushIntervalSeconds), 
+            _timer = new Timer(FlushTimer, null,
+                TimeSpan.FromSeconds(FlushIntervalSeconds),
                 TimeSpan.FromSeconds(FlushIntervalSeconds));
             _logger.LogInformation("🔄 批量消费者定时器已启动，间隔 {FlushIntervalSeconds} 秒", FlushIntervalSeconds);
         }
     }
 
-    public async Task Consume(ConsumeContext<SensorReadingRecordedEvent> context)
+    public Task Consume(ConsumeContext<SensorReadingRecordedEvent> context)
     {
-        // ✅ 添加消息到缓冲区
         lock (_lock)
         {
             _buffer.Add(context.Message);
             _messageCount++;
-            
-            // 每 10 条记录一次日志
+
             if (_messageCount % 10 == 0 || _messageCount == 1)
             {
                 _logger.LogInformation($"📦 缓冲区: {_messageCount} 条消息");
             }
-            
-            // ✅ 达到批量大小 → 立即处理
+
             if (_messageCount >= BatchSize)
             {
                 _logger.LogInformation($"🎯 达到批量阈值 {BatchSize}，立即处理");
                 var messages = _buffer.ToList();
                 _buffer.Clear();
                 _messageCount = 0;
-                
-                // 异步处理
+
                 _ = Task.Run(async () => await ProcessBatchAsync(messages));
             }
         }
+        return Task.CompletedTask;
     }
 
-    private async void FlushTimer(object? state)
+    private void FlushTimer(object? state)
     {
-        // ✅ 防止重复处理
         if (_isProcessing) return;
-        
+
         try
         {
             lock (_lock)
@@ -87,9 +81,9 @@ public class SensorReadingBatchConsumer : IConsumer<SensorReadingRecordedEvent>
                     _buffer.Clear();
                     var count = _messageCount;
                     _messageCount = 0;
-                    
+
                     _isProcessing = true;
-                    _ = Task.Run(async () => 
+                    _ = Task.Run(async () =>
                     {
                         try
                         {
@@ -113,7 +107,7 @@ public class SensorReadingBatchConsumer : IConsumer<SensorReadingRecordedEvent>
     private async Task ProcessBatchAsync(List<SensorReadingRecordedEvent> messages)
     {
         if (messages.Count == 0) return;
-        
+
         _logger.LogInformation($"🔄 处理批量: {messages.Count} 条读数");
 
         using var scope = _scopeFactory.CreateScope();
@@ -121,7 +115,7 @@ public class SensorReadingBatchConsumer : IConsumer<SensorReadingRecordedEvent>
 
         try
         {
-            // ✅ 按 SensorId 分组
+            // 按 SensorId 分组
             var grouped = messages.GroupBy(m => m.SensorId);
 
             foreach (var group in grouped)
