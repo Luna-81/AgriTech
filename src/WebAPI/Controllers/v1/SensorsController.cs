@@ -4,7 +4,7 @@ using Application.Features.Sensors.Queries.GetSensorHistory;
 using Application.Features.Sensors.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Versioning;
+using Asp.Versioning;
 using WebAPI.Models.Requests;
 
 namespace WebAPI.Controllers.v1;
