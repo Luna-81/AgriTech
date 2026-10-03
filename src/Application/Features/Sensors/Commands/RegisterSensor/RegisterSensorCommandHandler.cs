@@ -74,7 +74,7 @@ public class RegisterSensorCommandHandler : IRequestHandler<RegisterSensorComman
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error while registering sensor: {Message}", ex.Message);
-            return Result<Guid>.Failure($"注册传感器时发生错误：{ex.Message}");
+            return Result<Guid>.Failure($"Error occurred while registering sensor: {ex.Message}");
         }
     }
 }
