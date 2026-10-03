@@ -81,5 +81,54 @@ public class FarmTests
     }
 
 
+        [Theory]
+    [InlineData(1, 2)]
+    [InlineData(5, 6)]
+    public void AddSensor_WhenExceedingCapacity_ThrowsDomainException(int capacity, int count)
+    {
+        // Arrange
+        var farm = Farm.Create("Limit Test Farm", Location.FromCoordinates(0, 0), capacity);
+
+        // Act & Assert
+        for (int i = 0; i < count; i++)
+        {
+            var sensor = Sensor.Create($"S{i}", Temperature.FromCelsius(20), Location.FromCoordinates(0, 0));
+
+            if (i < capacity)
+            {
+                farm.AddSensor(sensor);
+            }
+            else
+            {
+                FluentActions.Invoking(() => farm.AddSensor(sensor))
+                    .Should().Throw<DomainException>();
+            }
+        }
+    }
+
+    [Fact]
+    public void AddSensor_WhenAddingDuplicateId_ThrowsDomainException()
+    {
+        // Arrange
+        var farm = Farm.Create("Unique Farm", Location.FromCoordinates(0, 0), 5);
+        var sensor = Sensor.Create("S1", Temperature.FromCelsius(20), Location.FromCoordinates(0, 0));
+        farm.AddSensor(sensor);
+
+        // Act & Assert
+        FluentActions.Invoking(() => farm.AddSensor(sensor))
+            .Should().Throw<DomainException>();
+    }
+
+    [Fact]
+    public void Sensors_ShouldBeReadOnlyList()
+    {
+        // Arrange
+        var farm = Farm.Create("Test Farm", Location.FromCoordinates(0, 0), 5);
+
+        // Act & Assert
+        farm.Sensors.Should().BeAssignableTo<IReadOnlyList<Sensor>>();
+    }
+
+
 
 }
